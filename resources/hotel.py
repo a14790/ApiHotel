@@ -32,11 +32,21 @@ class Hotel(Resource):
                 return hotel, 200 
             return {"message": "Hotel not found"}
 
-    def post(self, id_hotel):
+    def put(self, id_hotel):
         dados = Hotel.argumentos.parse_args()
+
         for hotel in hoteis:
             if hotel["hotel_id"] == id_hotel:
-                return {"message": "Hotel with this id already exists"}
-        novo_hotel = {"hotel_id": id_hotel,**dados}
+                hotel_atualizado = {"hotel_id": id_hotel, **dados}
+                hotel.update(hotel_atualizado)
+                hotel.update(**dados)
+                return hotel, 200
+
+        novo_hotel = {"hotel_id": id_hotel, **dados}
         hoteis.append(novo_hotel)
-        return novo_hotel, 200
+        return novo_hotel, 201  # Created
+
+    def delete(self, id_hotel):
+        global hoteis
+        hoteis = [hotel for hotel in hoteis if hotel["hotel_id"]  != id_hotel]
+        return {"message" f"Hotel with {id_hotel} deleted"}
