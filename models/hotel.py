@@ -26,9 +26,23 @@ class HotelModel(bd.Model):
             "cidade": self.cidade
             }
 
+    @classmethod
+    def find_hotel(cls, id_hotel):
+        hotel = cls.query.filter_by(hotel_id=id_hotel).first()
+        if hotel:
+             return hotel
+        return None
+    
+    def save_hotel(self):
+        bd.session.add(self)
+        bd.session.commit()
 
-
-
-
-
-
+    def delete_hotel(self):
+        bd.session.delete(self)
+        bd.session.commit()
+        
+    def update_hotel(self,nome_atualizado,estrelas_atualizadas,diaria_atualizada,cidade_atualizda):
+        self.nome = nome_atualizado
+        self.estrelas = estrelas_atualizadas
+        self.diaria = diaria_atualizada
+        self.cidade = diaria_atualizada
