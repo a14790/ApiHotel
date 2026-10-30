@@ -3,18 +3,19 @@ from flask_restful import Resource, Api
 from resources.hotel import Hoteis, Hotel
 from resources.user import User, UserRegister, UserLoguin, UserLogout
 from con_sql import bd
+from flask_jwt_extended import JWTManager
 
 
 # Variavel representar a minha aplicação
 app = Flask(__name__)
-
+jwt = JWTManager(app)
 
 
 
 #Configurações
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///hoteis.db"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-
+app.config["JWT_SCRET_KEY"] = "a_minha_palavra_secreta_para_aminha_api_vai_ser_forte"
 
 api = Api(app)
 

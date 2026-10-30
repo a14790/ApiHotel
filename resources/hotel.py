@@ -1,5 +1,7 @@
 from flask_restful import Resource, reqparse
 from models.hotel import HotelModel
+from flask_jwt_extended import jwt_required
+
 
 class Hoteis(Resource):
     def get(self):
@@ -19,6 +21,7 @@ class Hotel(Resource):
                 return hotel_encontrado.json(),200
         return { "message": "Hotel not found"}, 404
     
+    @jwt_required()
     def post(self,id_hotel): 
         dados = Hotel.argumentos.parse_args() # Dicionario
         hotel_encontrado = HotelModel.find_hotel(id_hotel)
@@ -28,6 +31,7 @@ class Hotel(Resource):
         novo_hotel.save_hotel()
         return novo_hotel.json(), 200
     
+    @jwt_required()
     def put(self,id_hotel): 
             dados = Hotel.argumentos.parse_args() # Dicionario
             hotel_encontrado = HotelModel.find_hotel(id_hotel)
@@ -42,6 +46,7 @@ class Hotel(Resource):
             novo_hotel.save_hotel()
             return novo_hotel.json(), 200 # Created
         
+    @jwt_required    
     def delete(self, id_hotel):
         hotel_encontrado = HotelModel.find_hotel(id_hotel)
         if hotel_encontrado:

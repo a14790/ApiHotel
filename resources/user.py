@@ -1,46 +1,61 @@
 from flask_restful import Resource, reqparse
 from models.user import UserModel
+from hmac import compare_digest
+from flask_jwt_extended import create_access_token, jwt_required
+# Listar, inserir, atualizar e eliminar um userl especifico
+
+
 
 
 class User(Resource):
+
+
+    def get(self,username):
+        user_encontrado = UserModel.find_user(username)
+        if user_encontrado:
+                return user_encontrado.json(),200
+        return { "message": "user not found"}, 404
+    
+    @jwt_required()    
+    def delete(self, username):
+        user_encontrado = UserModel.find_user(username)
+        if user_encontrado:
+            user_encontrado.delete_user()
+            return { "message": f"user with id {username} deleted"}, 200
+        return {"message": "user not found"}, 404
+
+
+class UserRegister (Resource) : 
     argumentos = reqparse.RequestParser()
-    argumentos.add_argument("Nome", type = str, help="Nome obrigatório")
-    argumentos.add_argument("estrelas", type = float, help="Estrelas obrigatório")
-    argumentos.add_argument("diaria", type = float, help="Diaria obrigatório")
-    argumentos.add_argument("cidade", type = str, help="Cidade obrigatório")
+    argumentos.add_argument("username", type = str, help="Username obrigatório")
+    argumentos.add_argument("password", type = float, help="Password obrigatório")
+
+
+def post(self): 
+        dados = UserRegister.argumentos.parse_args() # Dicionario
+        user_encontrado = UserModel.find_user(dados["username"])
+        if user_encontrado:
+                return { "message": "user with this arleady exists"}
+        novo_user = UserModel (**dados)
+        novo_user.save_user()
+        return novo_user.json(), 200
+
+
+
+
+class UserLogin (Resource) : 
+    argumentos = reqparse.RequestParser()
+    argumentos.add_argument("username", type = str, help="Username obrigatório")
+    argumentos.add_argument("password", type = float, help="Password obrigatório")
     
-    def get(self,id_hotel):
-        hotel_encontrado = HotelModel.find_hotel(id_hotel)
-        if hotel_encontrado:
-                return hotel_encontrado.json(),200
-        return { "message": "Hotel not found"}, 404
-    
-    def post(self,id_hotel): 
-        dados = Hotel.argumentos.parse_args() # Dicionario
-        hotel_encontrado = HotelModel.find_hotel(id_hotel)
-        if hotel_encontrado:
-                return { "message": "Hotel with this id arleady exists"}
-        novo_hotel = HotelModel (id_hotel,**dados)
-        novo_hotel.save_hotel()
-        return novo_hotel.json(), 200
-    
-    def put(self,id_hotel): 
-            dados = Hotel.argumentos.parse_args() # Dicionario
-            hotel_encontrado = HotelModel.find_hotel(id_hotel)
-            if hotel_encontrado:
-                lista = [dado for dado in dados.values()]
-                hotel_atualizado = HotelModel(id_hotel, **dados)
-                hotel_atualizado.update_hotel(*lista)
-                hotel_atualizado.save.hotel(**dados)
-                return hotel_atualizado.json(), 200
-            
-            novo_hotel = HotelModel (id_hotel,**dados)
-            novo_hotel.save_hotel()
-            return novo_hotel.json(), 200
+    def post(self):
+        dados = User.login.argumentos.parse_args()
+        user = UserModel.find_user(dados["username"])
         
-    def delete(self, id_hotel):
-        hotel_encontrado = HotelModel.find_hotel(id_hotel)
-        if hotel_encontrado:
-            hotel_encontrado.delete_hotel()
-            return { "message": f"Hotel with id {id_hotel} deleted"}, 200
-        return {"message": "Hotel not found"}, 400
+        if user and compare_digest(user.password,dados["password"]):
+            token = create_access_token(identity=user.username)
+            return {"acess_token": token }
+        return {"message": "Username or password invalid!"}
+
+class UserLogout (Resource) : 
+     ...
