@@ -3,6 +3,7 @@ from models.hotel import HotelModel
 from flask_jwt_extended import jwt_required
 
 
+
 class Hoteis(Resource):
     def get(self):
         return ({"hoteis": [hotel.json() for hotel in HotelModel.query.all()]})
