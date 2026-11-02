@@ -1,45 +1,73 @@
-from flask import Flask
-from flask_restful import Resource, Api
-from resources.hotel import Hoteis, Hotel
-from resources.user import User, UserRegister, UserLoguin, UserLogout
-from con_sql import bd
-from flask_jwt_extended import JWTManager
-from blocklist import BLOCKLIST 
-
-# Variavel representar a minha aplicação
-app = Flask(__name__)
-jwt = JWTManager(app)
-api = Api(app)
+from flask_restful import Resource, reqparse
+from models.user import UserModel
+from hmac import compare_digest
+from flask_jwt_extended import create_access_token, jwt_required, get_jwt
+from blocklist import BLOCKLIST
 
 
-
-#Configurações
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///hoteis.db"
-app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-app.config["JWT_SCRET_KEY"] = "a_minha_palavra_secreta_para_aminha_api_vai_ser_forte"
-app.config["JWT_BLACKLIST_ENABLED"] = True
-
-@jwt.token_in_blocklist_loader
-def verificar_blocklist(jwt_header,jwt_playoad):
-    jti =  jwt_playoad["jti"]
-    return jti in BLOCKLIST
-
-@jwt.revoked_token_loader
-def token_revogado(jwt_header,jwt_payload):
-    return { "message": "You have no acess to this resource. Login please! "}                                                                                                                                                                                        
+class User(Resource):
+    argumentos = reqparse.RequestParser()
+    argumentos.add_argument("nome", type=str, help="Nome obrigatorio")
+    argumentos.add_argument("estrelas", type=float, help="Estrelas obrigatorio")
+    argumentos.add_argument("diaria", type=float, help="Diaria obrigatorio")
+    argumentos.add_argument("cidade", type=str, help="Cidade obrigatorio")
+    
+    def get(self, username):
+       user_encontrado = UserModel.find_user(username)
+       if user_encontrado:
+            return user_encontrado.json(), 200
+       return{ "message": "user not found" }
 
 
-# Rotas
-api.add_resource(Hoteis, "/hoteis")
-api.add_resource(Hotel, "/hoteis/<string:id_hotel>")
-api.add_resource(User, "/users/<string:username>")
-api.add_resource(UserRegister, "/registar")
-api.add_resource(UserLoguin, "/loguin")
-api.add_resource(UserLogout, "/logout")
+    @jwt_required()
+    def delete(self, username):
+        user_econtrado = UserModel.find_user(username)
+        if user_econtrado:
+            user_econtrado.delete_hotel()
+            return {"message": f"Hotel with {username} deleted"}, 200
+        return {"message": "User not found"}, 404
 
 
-if __name__ == "__main__":
-    bd.init_app(app)
-    with app.app_context():
-        bd.create_all()
-    app.run(debug=True)
+
+
+class UserRegister(Resource):
+    argumentos = reqparse.RequestParser()
+    argumentos.add_argument("username", type=str, help="Username obrigatorio")
+    argumentos.add_argument("password", type=str, help="Password obrigatorio")
+    
+
+
+
+
+    def post(self):
+        dados = UserRegister.argumentos.parse_args() # Dicionario
+        user_encontrado = UserModel.find_user(dados["username"])
+        if user_encontrado:
+            return {"message": "User with this username already exists" }, 404
+        novo_user = UserModel(**dados)
+        novo_user.save_user()
+        return novo_user.json(), 200
+    
+class UserLogin(Resource):
+    argumentos = reqparse.RequestParser()
+    argumentos.add_argument("username", type=str, help="Username obrigatorio")
+    argumentos.add_argument("password", type=str, help="Password obrigatorio")
+
+
+    def post(self):
+        dados = UserLogin.argumentos.parse_args()
+        user = UserModel.find_user(dados["username"])
+
+
+        if user and compare_digest(user.password,dados["password"]):
+            token = create_access_token(identity=user.username)
+            return {"acess_token": token }
+        return{"message": "Username or password invalid"}, 401
+
+
+class UserLogout(Resource):
+    @jwt_required()
+    def post(self):
+        jwt_id = get_jwt()["jti"]
+        BLOCKLIST.add(jwt_id)
+        return {"message": "User logged out successfuly"}

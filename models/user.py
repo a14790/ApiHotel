@@ -1,7 +1,7 @@
 from con_sql import bd
 
 
-class HotelModel(bd.Model):
+class UserModel(bd.Model):
     __tablename__ = "utilizadores"
     user_id = bd.Column(bd.Integer, primary_key = True, autoincrement=True)
     username = bd.Column (bd.String(80))
